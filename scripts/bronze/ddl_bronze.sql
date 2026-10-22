@@ -1,203 +1,125 @@
 /*
-====================================================================================
-DDL Script: Create Bronze Tables
-====================================================================================
-Sccript Purpose:
-  This script creates tables in the 'bronze' schema, dropping existing tables if the
-  already exist.
-  Run this script to re-define the DDL structure of 'bronze' Tables
-====================================================================================
+========================================================
+Sales Data Warehouse & Analytics
+Bronze Layer - DDL Script
+========================================================
+
+Purpose:
+    Drop and recreate the six Bronze tables
+    used to store raw CRM and ERP data.
+
+Database:
+    sales_dw
+
+Environment:
+    PostgreSQL 17 | Docker | DBeaver
+
+Prerequisites:
+    - PostgreSQL container must be running.
+    - Database sales_dw must already exist.
+    - Connect to sales_dw before execution.
+
+WARNING:
+    Running this script will delete all existing
+    data in the six Bronze tables.
+
+========================================================
 */
 
-CREATE OR REPLACE PROCEDURE bronze.load_bronze()
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    start_time TIMESTAMP;
-    end_time TIMESTAMP;
-    batch_start_time TIMESTAMP;
-    batch_end_time TIMESTAMP;
 
-BEGIN
-	
-	batch_start_time := clock_timestamp();
-    RAISE NOTICE '==========================================';
-    RAISE NOTICE 'Loading Bronze Layer';
-    RAISE NOTICE '==========================================';
+-- =====================================================
+-- CRM: Customer Information
+-- Source: cust_info.csv
+-- =====================================================
 
-    RAISE NOTICE '------------------------------------------';
-    RAISE NOTICE 'Loading CRM Tables';
-    RAISE NOTICE '------------------------------------------';
+DROP TABLE IF EXISTS bronze.crm_cust_info;
+
+CREATE TABLE bronze.crm_cust_info (
+    cst_id INTEGER,
+    cst_key VARCHAR(50),
+    cst_firstname VARCHAR(50),
+    cst_lastname VARCHAR(50),
+    cst_marital_status VARCHAR(10),
+    cst_gndr VARCHAR(10),
+    cst_create_date DATE
+);
 
 
-    -- =====================================================
-    -- Load CRM Customer Information
-    -- =====================================================
+-- =====================================================
+-- CRM: Product Information
+-- Source: prd_info.csv
+-- =====================================================
 
-    start_time := clock_timestamp();
+DROP TABLE IF EXISTS bronze.crm_prd_info;
 
-    RAISE NOTICE '>> Truncating Table: bronze.crm_cust_info';
-    TRUNCATE TABLE bronze.crm_cust_info;
-
-    RAISE NOTICE '>> Inserting Data Into: bronze.crm_cust_info';
-    COPY bronze.crm_cust_info
-    FROM '/data/source_crm/cust_info.csv'
-    WITH (
-        FORMAT CSV,
-        HEADER TRUE,
-        DELIMITER ','
-    );
-
-    end_time := clock_timestamp();
-
-    RAISE NOTICE '>> Load Duration: % seconds',
-        EXTRACT(EPOCH FROM (end_time - start_time));
+CREATE TABLE bronze.crm_prd_info (
+    prd_id INTEGER,
+    prd_key VARCHAR(50),
+    prd_nm VARCHAR(255),
+    prd_cost NUMERIC(10,2),
+    prd_line VARCHAR(10),
+    prd_start_dt DATE,
+    prd_end_dt DATE
+);
 
 
-    -- =====================================================
-    -- Load CRM Product Information
-    -- =====================================================
+-- =====================================================
+-- CRM: Sales Details
+-- Source: sales_details.csv
+-- =====================================================
 
-    start_time := clock_timestamp();
+DROP TABLE IF EXISTS bronze.crm_sales_details;
 
-    RAISE NOTICE '>> Truncating Table: bronze.crm_prd_info';
-    TRUNCATE TABLE bronze.crm_prd_info;
-
-    RAISE NOTICE '>> Inserting Data Into: bronze.crm_prd_info';
-    COPY bronze.crm_prd_info
-    FROM '/data/source_crm/prd_info.csv'
-    WITH (
-        FORMAT CSV,
-        HEADER TRUE,
-        DELIMITER ','
-    );
-
-    end_time := clock_timestamp();
-
-    RAISE NOTICE '>> Load Duration: % seconds',
-        EXTRACT(EPOCH FROM (end_time - start_time));
+CREATE TABLE bronze.crm_sales_details (
+    sls_ord_num VARCHAR(20),
+    sls_prd_key VARCHAR(50),
+    sls_cust_id INTEGER,
+    sls_order_dt INTEGER,
+    sls_ship_dt INTEGER,
+    sls_due_dt INTEGER,
+    sls_sales NUMERIC(12,2),
+    sls_quantity INTEGER,
+    sls_price NUMERIC(12,2)
+);
 
 
-    -- =====================================================
-    -- Load CRM Sales Details
-    -- =====================================================
+-- =====================================================
+-- ERP: Customer Additional Information
+-- Source: CUST_AZ12.csv
+-- =====================================================
 
-    start_time := clock_timestamp();
+DROP TABLE IF EXISTS bronze.erp_cust_az12;
 
-    RAISE NOTICE '>> Truncating Table: bronze.crm_sales_details';
-    TRUNCATE TABLE bronze.crm_sales_details;
-
-    RAISE NOTICE '>> Inserting Data Into: bronze.crm_sales_details';
-    COPY bronze.crm_sales_details
-    FROM '/data/source_crm/sales_details.csv'
-    WITH (
-        FORMAT CSV,
-        HEADER TRUE,
-        DELIMITER ','
-    );
-
-    end_time := clock_timestamp();
-
-    RAISE NOTICE '>> Load Duration: % seconds',
-        EXTRACT(EPOCH FROM (end_time - start_time));
+CREATE TABLE bronze.erp_cust_az12 (
+    cid VARCHAR(20),
+    bdate DATE,
+    gen VARCHAR(10)
+);
 
 
-    RAISE NOTICE '------------------------------------------';
-    RAISE NOTICE 'Loading ERP Tables';
-    RAISE NOTICE '------------------------------------------';
+-- =====================================================
+-- ERP: Customer Location
+-- Source: LOC_A101.csv
+-- =====================================================
+
+DROP TABLE IF EXISTS bronze.erp_loc_a101;
+
+CREATE TABLE bronze.erp_loc_a101 (
+    cid VARCHAR(20),
+    cntry VARCHAR(50)
+);
 
 
-    -- =====================================================
-    -- Load ERP Customer Additional Information
-    -- =====================================================
+-- =====================================================
+-- ERP: Product Categories
+-- Source: PX_CAT_G1V2.csv
+-- =====================================================
 
-    start_time := clock_timestamp();
+DROP TABLE IF EXISTS bronze.erp_px_cat_g1v2;
 
-    RAISE NOTICE '>> Truncating Table: bronze.erp_cust_az12';
-    TRUNCATE TABLE bronze.erp_cust_az12;
-
-    RAISE NOTICE '>> Inserting Data Into: bronze.erp_cust_az12';
-    COPY bronze.erp_cust_az12
-    FROM '/data/source_erp/CUST_AZ12.csv'
-    WITH (
-        FORMAT CSV,
-        HEADER TRUE,
-        DELIMITER ','
-    );
-
-    end_time := clock_timestamp();
-
-    RAISE NOTICE '>> Load Duration: % seconds',
-        EXTRACT(EPOCH FROM (end_time - start_time));
-
-
-    -- =====================================================
-    -- Load ERP Customer Location
-    -- =====================================================
-
-    start_time := clock_timestamp();
-
-    RAISE NOTICE '>> Truncating Table: bronze.erp_loc_a101';
-    TRUNCATE TABLE bronze.erp_loc_a101;
-
-    RAISE NOTICE '>> Inserting Data Into: bronze.erp_loc_a101';
-    COPY bronze.erp_loc_a101
-    FROM '/data/source_erp/LOC_A101.csv'
-    WITH (
-        FORMAT CSV,
-        HEADER TRUE,
-        DELIMITER ','
-    );
-
-    end_time := clock_timestamp();
-
-    RAISE NOTICE '>> Load Duration: % seconds',
-        EXTRACT(EPOCH FROM (end_time - start_time));
-
-
-    -- =====================================================
-    -- Load ERP Product Categories
-    -- =====================================================
-
-    start_time := clock_timestamp();
-
-    RAISE NOTICE '>> Truncating Table: bronze.erp_px_cat_g1v2';
-    TRUNCATE TABLE bronze.erp_px_cat_g1v2;
-
-    RAISE NOTICE '>> Inserting Data Into: bronze.erp_px_cat_g1v2';
-    COPY bronze.erp_px_cat_g1v2
-    FROM '/data/source_erp/PX_CAT_G1V2.csv'
-    WITH (
-        FORMAT CSV,
-        HEADER TRUE,
-        DELIMITER ','
-    );
-
-    end_time := clock_timestamp();
-
-    RAISE NOTICE '>> Load Duration: % seconds',
-        EXTRACT(EPOCH FROM (end_time - start_time));
-
-	batch_end_time := clock_timestamp();
-    RAISE NOTICE '==========================================';
-    RAISE NOTICE 'Bronze Layer Load Completed Successfully';
-    RAISE NOTICE '- Total Load Duration: % seconds', 
-    	EXTRACT(EPOCH FROM (batch_end_time - batch_start_time));
-    RAISE NOTICE '==========================================';
-
-
-EXCEPTION
-    WHEN OTHERS THEN
-        RAISE NOTICE '=======================================';
-        RAISE NOTICE 'ERROR OCCURRED DURING LOADING BRONZE LAYER';
-        RAISE NOTICE 'Error Message: %', SQLERRM;
-        RAISE NOTICE 'Error State: %', SQLSTATE;
-        RAISE NOTICE '=======================================';
-        RAISE;
-
-END;
-$$;
-
-
--- Execute Bronze Layer
-CALL bronze.load_bronze();
+CREATE TABLE bronze.erp_px_cat_g1v2 (
+    id VARCHAR(10),
+    cat VARCHAR(50),
+    subcat VARCHAR(50),
+    maintenance VARCHAR(5)
+);
