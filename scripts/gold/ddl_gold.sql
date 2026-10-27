@@ -13,33 +13,12 @@ Usage:
   - These views can be queried directly for analytics and reporting.
 */
 
--- ===============================================================================
--- Create Dimension: gold.dim_customers
--- ===============================================================================
-
-  create view gold.dim_products as
-select
-	ROW_NUMBER() over (order by pn.prd_start_dt, pn.prd_key) as product_key,
-	pn.prd_id as product_id,
-	pn.prd_key as product_number,
-	pn.prd_nm as product_name,
-	pn.cat_id as category_id,
-	pc.cat as category,
-	pc.subcat as subcategory,
-	pc.maintenance,
-	pn.prd_cost as cost,
-	pn.prd_line as product_line,
-	pn.prd_start_dt as start_date
-from silver.crm_prd_info pn
-left join silver.erp_px_cat_g1v2 pc
-on pn.cat_id = pc.id
-where pn.prd_end_dt is null -- Filter out all historical data
-
 
 -- ===============================================================================
 -- Create Dimension: gold.dim_customers
 -- ===============================================================================
-  
+	
+drop view if exists gold.dim_customers;  
 create view gold.dim_customers as
 select
 	ROW_NUMBER() over (order by cst_id) customer_key,
@@ -61,10 +40,38 @@ on ci.cst_key = ca.cid
 left join silver.erp_loc_a101 la
 on ci.cst_key = la.cid
 
+
+	
+-- ===============================================================================
+-- Create Dimension: gold.dim_products
+-- ===============================================================================
+
+drop view if exists gold.dim_products;
+create view gold.dim_products as
+select
+	ROW_NUMBER() over (order by pn.prd_start_dt, pn.prd_key) as product_key,
+	pn.prd_id as product_id,
+	pn.prd_key as product_number,
+	pn.prd_nm as product_name,
+	pn.cat_id as category_id,
+	pc.cat as category,
+	pc.subcat as subcategory,
+	pc.maintenance,
+	pn.prd_cost as cost,
+	pn.prd_line as product_line,
+	pn.prd_start_dt as start_date
+from silver.crm_prd_info pn
+left join silver.erp_px_cat_g1v2 pc
+on pn.cat_id = pc.id
+where pn.prd_end_dt is null -- Filter out all historical data
+
+
+	
 -- ===============================================================================
 -- Create Fact: gold.fact_sales
 -- ===============================================================================
 
+drop view if exists gold.fact_sales;
 create view gold.fact_sales as
 select 
 sd.sls_ord_num as order_number,
