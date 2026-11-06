@@ -28,9 +28,6 @@ Architecture:
 ========================================================
 */
 
--- Verify current database
-SELECT current_database();
-
 -- Create Bronze Schema
 CREATE SCHEMA IF NOT EXISTS bronze;
 
